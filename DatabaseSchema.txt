@@ -1,0 +1,45 @@
+------------Users Table
+create table users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text not null,
+  student_id varchar(9) unique not null,
+  contact_number varchar not null,
+  username text unique not null,
+  pin varchar(5) not null,
+  profile_picture_url text,
+  created_at timestamp with time zone default current_timestamp,
+  constraint student_id_numeric_length_check check (student_id ~ '^\d{9}$'),
+  constraint pin_numeric_length_check check (pin ~ '^\d{5}$'),
+  constraint contact_number_numeric_check check (contact_number ~ '^\d+$')
+);
+
+
+-- INSERT: Users can create their profile
+create policy "Users can insert their profile"
+on users for insert
+with check (auth.uid() = id);
+
+-- UPDATE: Users can update their own profile
+create policy "Users can update their own profile"
+on users for update
+using (auth.uid() = id);
+
+-- DELETE: Users can delete their profile (optional)
+create policy "Users can delete their profile"
+on users for delete
+using (auth.uid() = id);
+
+
+---------------- wallet table
+
+create table wallets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  balance numeric(10,2) not null default 0,
+  created_at timestamp with time zone default current_timestamp
+);
+
+create policy "Wallets belong to the user"
+on wallets for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
