@@ -23,3 +23,39 @@ export interface Wallet {
   balance: number // numeric(10,2)
   created_at: string
 }
+
+export type TransactionType = 'income' | 'expense'
+
+export interface Transaction {
+  id: string
+  user_id: string
+  amount: number // numeric(10,2)
+  type: TransactionType
+  category: string
+  description: string
+  date: string
+  created_at: string
+}
+
+export interface Notification {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  type: 'transaction' | 'budget_alert' | 'friend_request' | 'money_request' | 'system'
+  read_status: boolean
+  related_entity_id?: string
+  created_at: string
+}
+
+export interface Budget {
+  id: string
+  user_id: string
+  month: string // Format: YYYY-MM
+  canteen: number // numeric
+  library: number // numeric
+  lab: number // numeric
+  club: number // numeric
+  other: number // numeric
+  created_at: string
+}

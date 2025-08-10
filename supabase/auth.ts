@@ -109,3 +109,50 @@ export async function signIn(credentials: SignInData) {
     throw error
   }
 }
+
+export async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getCurrentSession() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) throw error
+    return session
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getCurrentUser() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error) throw error
+    return user
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getCurrentUserProfile(): Promise<User | null> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    throw error
+  }
+}
