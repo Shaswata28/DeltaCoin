@@ -117,57 +117,6 @@ export async function getHomeWalletData(): Promise<HomeWalletData> {
   }
 }
 
-export async function getUserTransactionCount(): Promise<number> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No authenticated user')
-
-    const { count, error } = await supabase
-      .from('transactions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-
-    if (error) throw error
-    return count || 0
-  } catch (error) {
-    throw error
-  }
-}
-
-export async function getCategorySpending(month: string): Promise<Record<string, number>> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('No authenticated user')
-
-    const [year, monthNum] = month.split('-').map(num => parseInt(num))
-    
-    const lastDay = new Date(year, monthNum, 0).getDate()
-    
-    const startDate = `${month}-01`
-    const endDate = `${month}-${String(lastDay).padStart(2, '0')}`
-
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('category, amount')
-      .eq('user_id', user.id)
-      .eq('type', 'expense')
-      .gte('date', startDate)
-      .lte('date', endDate)
-
-    if (error) throw error
-
-    const categoryTotals: Record<string, number> = {}
-    transactions?.forEach(transaction => {
-      const category = transaction.category
-      categoryTotals[category] = (categoryTotals[category] || 0) + Number(transaction.amount)
-    })
-
-    return categoryTotals
-  } catch (error) {
-    throw error
-  }
-}
-
 export async function getUnreadNotificationsCount(): Promise<number> {
   try {
     const { data: { user } } = await supabase.auth.getUser()
@@ -232,6 +181,34 @@ export async function getCategorySpending(month: string): Promise<Record<string,
     })
 
     return categoryTotals
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function createNotification(
+  userId: string,
+  title: string,
+  message: string,
+  type: 'transaction' | 'budget_alert' | 'friend_request' | 'money_request' | 'system',
+  relatedEntityId?: string
+): Promise<Notification> {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        title,
+        message,
+        type,
+        read_status: false,
+        related_entity_id: relatedEntityId,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   } catch (error) {
     throw error
   }
@@ -302,6 +279,134 @@ export async function deleteAllNotifications(): Promise<void> {
       .eq('user_id', user.id)
 
     if (error) throw error
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function updateWalletBalance(amount: number, operation: 'add' | 'subtract' = 'add', userId?: string) {
+  try {
+    if (!isValidAmount(amount)) {
+      throw new Error('Invalid amount: must be a positive number')
+    }
+
+    let targetUserId = userId;
+    
+    if (!targetUserId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No authenticated user')
+      targetUserId = user.id;
+    }
+
+    const wallet = await getUserWallet(targetUserId)
+    if (!wallet) throw new Error('Wallet not found')
+
+    const newBalance = operation === 'add' 
+      ? Number(wallet.balance) + amount 
+      : Number(wallet.balance) - amount
+
+    if (newBalance < 0) {
+      throw new Error('Insufficient balance')
+    }
+
+    const roundedBalance = Math.round(newBalance * 100) / 100
+
+    const { data, error } = await supabase
+      .from('wallets')
+      .update({ balance: roundedBalance })
+      .eq('user_id', targetUserId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    throw error
+  }
+}
+
+function isValidAmount(amount: number): boolean {
+  return amount >= 0 && Number.isFinite(amount)
+}
+
+export interface CreateTransactionData {
+  amount: number
+  type: TransactionType
+  category: string
+  description?: string
+  date?: string
+}
+
+export async function createTransaction(transactionData: CreateTransactionData & { stripe_payment_intent_id?: string }, userId?: string) {
+  try {
+    if (!isValidAmount(transactionData.amount)) {
+      throw new Error('Invalid amount: must be a positive number')
+    }
+
+    let targetUserId = userId;
+    
+    if (!targetUserId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No authenticated user')
+      targetUserId = user.id;
+    }
+
+    const roundedAmount = Math.round(transactionData.amount * 100) / 100
+
+    // Update wallet balance first
+    const operation = transactionData.type === 'income' ? 'add' : 'subtract'
+    await updateWalletBalance(roundedAmount, operation, targetUserId)
+
+    // Only create transaction record AFTER successful balance update
+    const transactionInsert: any = {
+      user_id: targetUserId,
+      amount: roundedAmount,
+      type: transactionData.type,
+      category: transactionData.category,
+      description: transactionData.description || '',
+      date: transactionData.date || new Date().toISOString().split('T')[0],
+    }
+
+    // Only add stripe fields if they exist in the schema
+    if (transactionData.stripe_payment_intent_id) {
+      transactionInsert.stripe_payment_intent_id = transactionData.stripe_payment_intent_id;
+      transactionInsert.status = 'pending';
+    }
+
+    const { data: transaction, error: transactionError } = await supabase
+      .from('transactions')
+      .insert(transactionInsert)
+      .select()
+      .single()
+
+    if (transactionError) {
+      // If transaction record creation fails after successful balance update,
+      // we need to revert the balance change
+      const revertOperation = operation === 'add' ? 'subtract' : 'add'
+      try {
+        await updateWalletBalance(roundedAmount, revertOperation, targetUserId)
+      } catch (revertError) {
+        console.error('Failed to revert balance after transaction creation failure:', revertError)
+        // Log this critical error but don't throw to avoid masking the original error
+      }
+      throw transactionError
+    }
+
+    // Create notification for the transaction
+    const notificationTitle = transactionData.type === 'income' ? 'Top-up Successful' : 'Payment Successful'
+    const notificationMessage = transactionData.type === 'income' 
+      ? `Your account has been topped up with ৳${roundedAmount.toFixed(2)}`
+      : `Payment of ৳${roundedAmount.toFixed(2)} to ${transactionData.category} was successful`
+
+    await createNotification(
+      targetUserId,
+      notificationTitle,
+      notificationMessage,
+      'transaction',
+      transaction.id
+    )
+
+    return transaction
   } catch (error) {
     throw error
   }

@@ -64,6 +64,14 @@ export default function TabLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="transactions"
+          options={{
+            tabBarIcon: ({ color }) => (
+              <ArrowLeftRight size={24} color={color} strokeWidth={2} />
+            ),
+          }}
+        />
 
         <Tabs.Screen
           name="notifications"

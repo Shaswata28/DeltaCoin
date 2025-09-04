@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { signOut, getCurrentUser, getCurrentUserProfile } from '@/supabase/auth';
 import { getUserTransactionCount, getCategorySpending } from '@/supabase/db';
 import type { User as UserType } from '@/supabase/client';
-import { PROFILE_IMAGES } from '../../components/constants/images';
+
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -164,7 +164,7 @@ export default function ProfileScreen() {
                 <View style={[styles.avatarContainer, isDark && styles.avatarContainerDark]}>
                   <Image
                     source={{ 
-                      uri: profileData.profile?.profile_picture_url || PROFILE_IMAGES.defaultAvatar 
+                      uri: profileData.profile?.profile_picture_url || 'https://via.placeholder.com/150'
                     }}
                     style={styles.avatar}
                   />
