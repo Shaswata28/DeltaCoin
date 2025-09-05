@@ -156,3 +156,27 @@ export async function getCurrentUserProfile(): Promise<User | null> {
     throw error
   }
 }
+
+export async function updateUserProfile(updates: Partial<Omit<User, 'id' | 'created_at'>>, userId?: string) {
+  try {
+    let targetUserId = userId;
+    
+    if (!targetUserId) {
+      const user = await getCurrentUser()
+      if (!user) throw new Error('No authenticated user')
+      targetUserId = user.id;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', targetUserId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    throw error
+  }
+}
