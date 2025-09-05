@@ -473,3 +473,63 @@ export async function getTransactionsByDateRange(startDate: string, endDate: str
     throw error
   }
 }
+
+export async function getBudgetProgress(month: string): Promise<{
+  category: string;
+  spent: number;
+  limit: number;
+  percentage: number;
+}[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user')
+
+    const { data: budget, error: budgetError } = await supabase
+      .from('budgets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('month', month)
+      .single()
+
+    if (budgetError && budgetError.code !== 'PGRST116') throw budgetError
+    if (!budget) return []
+
+    const [year, monthNum] = month.split('-').map(num => parseInt(num))
+    const lastDay = new Date(year, monthNum, 0).getDate()
+    const startDate = `${month}-01`
+    const endDate = `${month}-${String(lastDay).padStart(2, '0')}`
+
+    const { data: transactions, error: transactionsError } = await supabase
+      .from('transactions')
+      .select('category, amount')
+      .eq('user_id', user.id)
+      .eq('type', 'expense')
+      .gte('date', startDate)
+      .lte('date', endDate)
+
+    if (transactionsError) throw transactionsError
+
+    const categorySpending: Record<string, number> = {}
+    transactions?.forEach(transaction => {
+      const category = transaction.category.toLowerCase()
+      categorySpending[category] = (categorySpending[category] || 0) + Number(transaction.amount)
+    })
+
+    const budgetCategories = {
+      canteen: { name: 'Canteen', limit: Number(budget.canteen) },
+      library: { name: 'Library', limit: Number(budget.library) },
+      lab: { name: 'Lab', limit: Number(budget.lab) },
+      club: { name: 'Club', limit: Number(budget.club) },
+      other: { name: 'Other', limit: Number(budget.other) }
+    }
+
+    return Object.entries(budgetCategories).map(([key, { name, limit }]) => ({
+      category: name,
+      spent: categorySpending[key] || 0,
+      limit,
+      percentage: limit > 0 ? (categorySpending[key] || 0) / limit * 100 : 0
+    }))
+  } catch (error) {
+    throw error
+  }
+}
