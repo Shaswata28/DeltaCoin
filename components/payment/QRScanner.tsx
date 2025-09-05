@@ -84,8 +84,8 @@ export function QRScanner({
     if (visible) {
       console.log('QRScanner: Scanner opened, allowed formats:', allowedFormats);
       
-      // Request permission if not granted and not already requested
-      if (permission && !permission.granted && !permission.canAskAgain === false) {
+      // Request permission if not granted
+      if (permission && !permission.granted) {
         requestPermission();
       }
       
@@ -357,36 +357,7 @@ export function QRScanner({
     };
   });
 
-  // Render permission request UI directly in the main modal
-  const renderPermissionRequest = () => (
-    <View style={[styles.permissionContainer, isDark && styles.permissionContainerDark]}>
-      <View style={styles.permissionIconContainer}>
-        <Scan size={64} color="#FFD700" />
-      </View>
-      <Text style={[styles.permissionTitle, isDark && styles.permissionTitleDark]}>
-        Camera Access Required
-      </Text>
-      <Text style={[styles.permissionText, isDark && styles.permissionTextDark]}>
-        We need camera access to scan QR codes for secure payments. Your privacy is protected.
-      </Text>
-      <View style={styles.permissionButtons}>
-        <TouchableOpacity
-          style={[styles.permissionButton, styles.cancelButton]}
-          onPress={onClose}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.permissionButton, styles.grantButton]}
-          onPress={requestPermission}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.grantButtonText}>Grant Access</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+
 
   // Render camera scanner UI
   const renderCameraScanner = () => (
@@ -496,11 +467,8 @@ export function QRScanner({
               Loading camera...
             </Text>
           </View>
-        ) : !permission.granted ? (
-          // Permission request UI
-          renderPermissionRequest()
         ) : (
-          // Camera scanner UI
+          // Camera scanner UI - system will handle permission requests
           renderCameraScanner()
         )}
       </View>
@@ -708,91 +676,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
-  },
-  
-  // Permission styles - now rendered directly in main modal
-  permissionContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    borderRadius: 24,
-    padding: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-    
-  },
-  permissionContainerDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  permissionIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  permissionTitle: {
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#2C2C2C',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  permissionTitleDark: {
-    color: '#FFFFFF',
-  },
-  permissionText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  permissionTextDark: {
-    color: '#A6A6A6',
-  },
-  permissionButtons: {
-    flexDirection: 'row',
-    gap: 16,
-    width: '100%',
-  },
-  permissionButton: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  grantButton: {
-    backgroundColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  grantButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#2C2C2C',
   },
 });

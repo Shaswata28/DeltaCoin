@@ -411,3 +411,65 @@ export async function createTransaction(transactionData: CreateTransactionData &
     throw error
   }
 }
+
+export async function getUserTransactions(limit?: number, offset?: number): Promise<Transaction[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user')
+
+    let query = supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (limit) query = query.limit(limit)
+    if (offset) query = query.range(offset, offset + (limit || 10) - 1)
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getTransactionsByCategory(category: string): Promise<Transaction[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user')
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('category', category)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function getTransactionsByDateRange(startDate: string, endDate: string): Promise<Transaction[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No authenticated user')
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    throw error
+  }
+}
