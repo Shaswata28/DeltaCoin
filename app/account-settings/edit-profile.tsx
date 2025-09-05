@@ -154,6 +154,8 @@ export default function EditProfileScreen() {
           {/* Divider */}
           <View style={[styles.divider, isDark && styles.dividerDark]} />
 
+        
+
           {/* Read-Only Fields */}
           <View style={styles.readOnlySection}>
             <View style={[styles.readOnlyField, isDark && styles.readOnlyFieldDark]}>
