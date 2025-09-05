@@ -72,6 +72,22 @@ export default function TabLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="history"
+          options={{
+            tabBarIcon: ({ color }) => (
+              <History size={24} color={color} strokeWidth={2} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="analytics"
+          options={{
+            tabBarIcon: ({ color }) => (
+              <LineChart size={24} color={color} strokeWidth={2} />
+            ),
+          }}
+        />
 
         <Tabs.Screen
           name="notifications"
