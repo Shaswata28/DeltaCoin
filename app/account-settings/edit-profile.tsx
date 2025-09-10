@@ -9,6 +9,7 @@ import { Button } from '@/components/common/Button';
 import { getCurrentUserProfile, updateUserProfile } from '@/supabase/auth';
 import { User } from '@/supabase/client';
 import { validateName, validatePhone } from '@/utils/validation';
+import AvatarGenerator from '@/components/AvatarGenerator';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -154,7 +155,7 @@ export default function EditProfileScreen() {
           {/* Divider */}
           <View style={[styles.divider, isDark && styles.dividerDark]} />
 
-        
+          
 
           {/* Read-Only Fields */}
           <View style={styles.readOnlySection}>
