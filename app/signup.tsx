@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
-import { signUp, generateAndStoreAvatar } from "@/supabase/auth";
+import { signUp } from "@/supabase/auth";
 
 import StudentInfoStep, {
   StudentInfo,
