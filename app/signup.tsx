@@ -90,20 +90,6 @@ export default function SignupScreen() {
         throw new Error("Failed to create account");
       }
 
-      // Generate and store avatar after successful signup
-      try {
-        console.log("Generating avatar for new user...");
-        const avatarUrl = await generateAndStoreAvatar(securityInfo.username);
-        if (avatarUrl) {
-          console.log("Avatar generated successfully:", avatarUrl);
-        } else {
-          console.log("Avatar generation failed, but signup was successful");
-        }
-      } catch (avatarError) {
-        console.error("Avatar generation error:", avatarError);
-        // Don't show this error to user as it's not critical
-      }
-
       Alert.alert("Success", "Account created successfully!", [
         {
           text: "OK",
